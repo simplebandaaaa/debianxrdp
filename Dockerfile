@@ -5,7 +5,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Multi-arch support block for Wine32
 RUN dpkg --add-architecture i386
 
-# Update and install packages in a single optimized layer
+# Firefox के लिए Mozilla PPA जोड़ना (Snap से बचने के लिए)
+RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common gnupg2 && \
+    add-apt-repository -y ppa:mozillateam/ppa && \
+    echo 'Package: firefox*\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001' > /etc/apt/preferences.d/mozilla-firefox
+
+# Update and install packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xrdp \
     xfce4 \
@@ -27,25 +32,31 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Set root password
-RUN echo "root:root" | chpasswd
+# ---- 🛠️ USER SETUP FIX ----
+# एक नया यूजर 'ubuntu' बनाएं और उसका पासवर्ड 'ubuntu' सेट करें
+RUN useradd -m -s /bin/bash ubuntu && \
+    echo "ubuntu:ubuntu" | chpasswd && \
+    adduser ubuntu sudo && \
+    echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# ----------------------------
 
-# Configure Xwrapper to allow any user to start X
+# Configure Xwrapper
 RUN sed -i 's/^allowed_users=.*/allowed_users=anybody/' /etc/X11/Xwrapper.config || echo "allowed_users=anybody" >> /etc/X11/Xwrapper.config
 
 # Generate machine-id for dbus
 RUN mkdir -p /var/run/dbus && dbus-uuidgen > /var/lib/dbus/machine-id
 
-# Optimize XRDP Configuration (Safely without wiping out startwm.sh)
+# Optimize XRDP Configuration
 RUN sed -i 's/crypt_level=high/crypt_level=low/' /etc/xrdp/xrdp.ini && \
     sed -i 's/security_layer=negotiate/security_layer=rdp/' /etc/xrdp/xrdp.ini && \
     sed -i 's/max_bpp=32/max_bpp=24/' /etc/xrdp/xrdp.ini
 
-# Ensure XFCE starts for any RDP user session safely (Fixes black screen bug)
+# Ensure XFCE starts safely for the new user (Fixes black screen)
 RUN echo "unset DBUS_SESSION_BUS_ADDRESS" > /etc/skel/.xsession && \
     echo "unset XDG_RUNTIME_DIR" >> /etc/skel/.xsession && \
     echo "exec startxfce4" >> /etc/skel/.xsession && \
-    cp /etc/skel/.xsession /root/.xsession
+    cp /etc/skel/.xsession /home/ubuntu/.xsession && \
+    chown ubuntu:ubuntu /home/ubuntu/.xsession
 
 # Add xrdp user to ssl-cert group
 RUN adduser xrdp ssl-cert
