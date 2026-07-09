@@ -1,10 +1,12 @@
-FROM debian:bullseye
+FROM ubuntu:26.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Multi-arch support block for Wine32
 RUN dpkg --add-architecture i386
 
-RUN apt update && apt install -y \
+# Update and install packages in a single optimized layer
+RUN apt-get update && apt-get install -y --no-install-recommends \
     xrdp \
     xfce4 \
     xfce4-goodies \
@@ -15,28 +17,37 @@ RUN apt update && apt install -y \
     wget \
     nano \
     net-tools \
-    policykit-1 \
+    ssl-cert \
+    polkitd \
     pulseaudio \
     pulseaudio-utils \
     wine \
     wine32 \
-    firefox-esr && \
-    apt clean && rm -rf /var/lib/apt/lists/*
+    firefox && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set root password
 RUN echo "root:root" | chpasswd
 
+# Configure Xwrapper to allow any user to start X
 RUN sed -i 's/^allowed_users=.*/allowed_users=anybody/' /etc/X11/Xwrapper.config || echo "allowed_users=anybody" >> /etc/X11/Xwrapper.config
-
-RUN echo "startxfce4" > /root/.xsession && chmod 700 /root/.xsession
 
 # Generate machine-id for dbus
 RUN mkdir -p /var/run/dbus && dbus-uuidgen > /var/lib/dbus/machine-id
 
+# Optimize XRDP Configuration (Safely without wiping out startwm.sh)
 RUN sed -i 's/crypt_level=high/crypt_level=low/' /etc/xrdp/xrdp.ini && \
     sed -i 's/security_layer=negotiate/security_layer=rdp/' /etc/xrdp/xrdp.ini && \
-    echo "exec startxfce4" > /etc/xrdp/startwm.sh && chmod +x /etc/xrdp/startwm.sh
+    sed -i 's/max_bpp=32/max_bpp=24/' /etc/xrdp/xrdp.ini
 
+# Ensure XFCE starts for any RDP user session safely (Fixes black screen bug)
+RUN echo "unset DBUS_SESSION_BUS_ADDRESS" > /etc/skel/.xsession && \
+    echo "unset XDG_RUNTIME_DIR" >> /etc/skel/.xsession && \
+    echo "exec startxfce4" >> /etc/skel/.xsession && \
+    cp /etc/skel/.xsession /root/.xsession
+
+# Add xrdp user to ssl-cert group
 RUN adduser xrdp ssl-cert
 
 COPY start.sh /start.sh
