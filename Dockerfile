@@ -5,12 +5,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Multi-arch support block for Wine32
 RUN dpkg --add-architecture i386
 
-# Firefox के लिए Mozilla PPA जोड़ना (Snap से बचने के लिए)
+# Firefox के लिए Mozilla PPA जोड़ना (Snap से बचने के लिए) और echo -e का उपयोग करना
 RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common gnupg2 && \
     add-apt-repository -y ppa:mozillateam/ppa && \
-    echo 'Package: firefox*\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001' > /etc/apt/preferences.d/mozilla-firefox
+    echo -e 'Package: firefox*\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001' > /etc/apt/preferences.d/mozilla-firefox
 
-# Update and install packages
+# Update and install packages (Wine और Wine32 को सही ढंग से फिक्स किया गया)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xrdp \
     xfce4 \
@@ -27,18 +27,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pulseaudio \
     pulseaudio-utils \
     wine \
-    wine32 \
+    wine32:i386 \
     firefox && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# ---- 🛠️ USER SETUP FIX ----
+# ---- 🛠️ USER SETUP FIX ---- #
 # एक नया यूजर 'ubuntu' बनाएं और उसका पासवर्ड 'ubuntu' सेट करें
 RUN useradd -m -s /bin/bash ubuntu && \
     echo "ubuntu:ubuntu" | chpasswd && \
     adduser ubuntu sudo && \
     echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-# ----------------------------
+# ---------------------------- #
 
 # Configure Xwrapper
 RUN sed -i 's/^allowed_users=.*/allowed_users=anybody/' /etc/X11/Xwrapper.config || echo "allowed_users=anybody" >> /etc/X11/Xwrapper.config
