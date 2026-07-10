@@ -5,12 +5,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Multi-arch support block for Wine32
 RUN dpkg --add-architecture i386
 
-# Firefox के लिए Mozilla PPA जोड़ना (Snap से बचने के लिए) और echo -e का उपयोग करना
+# Firefox के लिए Mozilla PPA जोड़ना (Snap से बचने के लिए - printf का उपयोग किया गया है ताकि एरर न आए)
 RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common gnupg2 && \
     add-apt-repository -y ppa:mozillateam/ppa && \
-    echo -e 'Package: firefox*\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001' > /etc/apt/preferences.d/mozilla-firefox
+    printf 'Package: firefox*\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001\n' > /etc/apt/preferences.d/mozilla-firefox
 
-# Update and install packages (Wine और Wine32 को सही ढंग से फिक्स किया गया)
+# Update and install packages (Wine और Wine32 की समस्या को भी फिक्स कर दिया गया है)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xrdp \
     xfce4 \
