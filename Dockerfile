@@ -10,9 +10,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     add-apt-repository -y ppa:mozillateam/ppa && \
     printf 'Package: firefox*\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001\n' > /etc/apt/preferences.d/mozilla-firefox
 
-# Update and install packages
+# Update and install packages (xorgxrdp को यहाँ जोड़ दिया गया है)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xrdp \
+    xorgxrdp \
     xfce4 \
     xfce4-goodies \
     xorg \
@@ -32,14 +33,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# ---- 🛠️ USER SETUP FIX (पहले से मौजूद ubuntu यूजर को कॉन्फ़िगर किया गया) ---- #
+# ---- 🛠️ USER SETUP FIX ---- #
 RUN echo "ubuntu:ubuntu" | chpasswd && \
     usermod -aG sudo ubuntu && \
     echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-# ------------------------------------------------------------------------ #
+# ---------------------------- #
 
-# Configure Xwrapper
-RUN sed -i 's/^allowed_users=.*/allowed_users=anybody/' /etc/X11/Xwrapper.config || echo "allowed_users=anybody" >> /etc/X11/Xwrapper.config
+# Configure Xwrapper (X server को किसी भी यूजर द्वारा चलाने की अनुमति देना)
+RUN echo "allowed_users=anybody" > /etc/X11/Xwrapper.config && \
+    echo "needs_root_rights=no" >> /etc/X11/Xwrapper.config
 
 # Generate machine-id for dbus
 RUN mkdir -p /var/run/dbus && dbus-uuidgen > /var/lib/dbus/machine-id
@@ -55,7 +57,7 @@ RUN echo "unset DBUS_SESSION_BUS_ADDRESS" > /etc/skel/.xsession && \
     echo "exec startxfce4" >> /etc/skel/.xsession && \
     mkdir -p /home/ubuntu && \
     cp /etc/skel/.xsession /home/ubuntu/.xsession && \
-    chown ubuntu:ubuntu /home/ubuntu/.xsession
+    chown -R ubuntu:ubuntu /home/ubuntu
 
 # Add xrdp user to ssl-cert group
 RUN adduser xrdp ssl-cert
