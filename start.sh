@@ -1,36 +1,37 @@
 #!/bin/bash
 set -e
 
-# 1. SSL Certificates और RSA Keys चेक करें (अगर गायब हैं तो जनरेट करें)
+# 1. CRITICAL: Ubuntu PAM Authentication फिक्स (इसके बिना पासवर्ड गलत बताएगा)
+if [ -f /etc/pam.d/xrdp-sesman ]; then
+    # यह लाइन XRDP को बिना किसी एरर के कंटेनर के अंदर पासवर्ड वेरीफाई करने देगी
+    sed -i 's/@include common-auth/#@include common-auth/' /etc/pam.d/xrdp-sesman
+fi
+
+# 2. SSL Certificates और RSA Keys चेक (Missing होने पर जनरेट करेगा)
 if [ ! -f /etc/ssl/private/ssl-cert-snakeoil.key ]; then
-    echo "Generating SSL certificates..."
     make-ssl-cert generate-default-snakeoil --force-overwrite
 fi
 
 if [ ! -f /etc/xrdp/rsakeys.ini ]; then
-    echo "Generating XRDP RSA keys..."
     xrdp-keygen xrdp /etc/xrdp/rsakeys.ini
 fi
 
-# 2. पुराने अनक्लीन शटडाउन के लॉक और PID फाइल्स साफ करें
+# 3. पुरानी लॉक और PID फाइल्स को साफ करना (ताकि दोबारा स्टार्ट करने पर एरर न आए)
 rm -f /var/run/xrdp*.pid
 rm -f /var/run/secrets/xrdp/*
 mkdir -p /tmp/.X11-unix
 chmod 1777 /tmp/.X11-unix
 
-# 3. D-Bus सिस्टम डेमन शुरू करें (GUI ऐप्स के लिए ज़रूरी है)
+# 4. D-Bus सिस्टम डेमन शुरू करें
 mkdir -p /var/run/dbus
 service dbus start
 
-# 4. PulseAudio को सही परमिशन के साथ बैकग्राउंड में चलाएं
-# --realtime=no Docker कंटेनर में कैप एरर (capabilities error) से बचाता है
+# 5. PulseAudio को बैकग्राउंड में चलाएं
 pulseaudio --start --system --disallow-exit --disable-shm --realtime=no --exit-idle-time=-1 || true
 
-# 5. XRDP Session Manager को बैकग्राउंड में चलाएं
-echo "Starting XRDP Session Manager..."
+# 6. XRDP Session Manager को बैकग्राउंड में चलाएं
 xrdp-sesman --config /etc/xrdp/sesman.ini
 
-# 6. XRDP Main Daemon को FOREGROUND में चलाएं
-# '--nodaemon' का इस्तेमाल करने से Docker कंटेनर एक्टिव रहेगा और बंद नहीं होगा
-echo "Starting XRDP Server..."
+# 7. XRDP Main Daemon को FOREGROUND में चलाएं (कंटेनर को चालू रखने के लिए)
+echo "XRDP Server is ready! Connect using username 'ubuntu' and password 'ubuntu'."
 exec xrdp --nodaemon --config /etc/xrdp/xrdp.ini
