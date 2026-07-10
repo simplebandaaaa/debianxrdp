@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     add-apt-repository -y ppa:mozillateam/ppa && \
     printf 'Package: firefox*\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001\n' > /etc/apt/preferences.d/mozilla-firefox
 
-# Update and install packages (xorgxrdp को यहाँ जोड़ दिया गया है)
+# Update and install packages (dbus-user-session को यहाँ जोड़ा गया है)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xrdp \
     xorgxrdp \
@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xfce4-goodies \
     xorg \
     dbus-x11 \
+    dbus-user-session \
     sudo \
     curl \
     wget \
@@ -39,7 +40,7 @@ RUN echo "ubuntu:ubuntu" | chpasswd && \
     echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 # ---------------------------- #
 
-# Configure Xwrapper (X server को किसी भी यूजर द्वारा चलाने की अनुमति देना)
+# Configure Xwrapper
 RUN echo "allowed_users=anybody" > /etc/X11/Xwrapper.config && \
     echo "needs_root_rights=no" >> /etc/X11/Xwrapper.config
 
@@ -51,12 +52,9 @@ RUN sed -i 's/crypt_level=high/crypt_level=low/' /etc/xrdp/xrdp.ini && \
     sed -i 's/security_layer=negotiate/security_layer=rdp/' /etc/xrdp/xrdp.ini && \
     sed -i 's/max_bpp=32/max_bpp=24/' /etc/xrdp/xrdp.ini
 
-# Ensure XFCE starts safely for the user (Fixes black screen)
-RUN echo "unset DBUS_SESSION_BUS_ADDRESS" > /etc/skel/.xsession && \
-    echo "unset XDG_RUNTIME_DIR" >> /etc/skel/.xsession && \
-    echo "exec startxfce4" >> /etc/skel/.xsession && \
-    mkdir -p /home/ubuntu && \
-    cp /etc/skel/.xsession /home/ubuntu/.xsession && \
+# Ensure XFCE starts safely for the user (Black Screen को हमेशा के लिए फिक्स करने के लिए बदलाव)
+RUN mkdir -p /home/ubuntu && \
+    printf 'unset DBUS_SESSION_BUS_ADDRESS\nunset XDG_RUNTIME_DIR\nexport XDG_SESSION_TYPE=x11\nxfce4-session\n' > /home/ubuntu/.xsession && \
     chown -R ubuntu:ubuntu /home/ubuntu
 
 # Add xrdp user to ssl-cert group
