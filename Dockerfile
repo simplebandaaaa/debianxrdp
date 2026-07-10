@@ -5,12 +5,12 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Multi-arch support block for Wine32
 RUN dpkg --add-architecture i386
 
-# Firefox के लिए Mozilla PPA जोड़ना (Snap से बचने के लिए - printf का उपयोग किया गया है ताकि एरर न आए)
+# Firefox के लिए Mozilla PPA जोड़ना (Snap से बचने के लिए)
 RUN apt-get update && apt-get install -y --no-install-recommends software-properties-common gnupg2 && \
     add-apt-repository -y ppa:mozillateam/ppa && \
     printf 'Package: firefox*\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001\n' > /etc/apt/preferences.d/mozilla-firefox
 
-# Update and install packages (Wine और Wine32 की समस्या को भी फिक्स कर दिया गया है)
+# Update and install packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xrdp \
     xfce4 \
@@ -32,13 +32,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# ---- 🛠️ USER SETUP FIX ---- #
-# एक नया यूजर 'ubuntu' बनाएं और उसका पासवर्ड 'ubuntu' सेट करें
-RUN useradd -m -s /bin/bash ubuntu && \
-    echo "ubuntu:ubuntu" | chpasswd && \
-    adduser ubuntu sudo && \
+# ---- 🛠️ USER SETUP FIX (पहले से मौजूद ubuntu यूजर को कॉन्फ़िगर किया गया) ---- #
+RUN echo "ubuntu:ubuntu" | chpasswd && \
+    usermod -aG sudo ubuntu && \
     echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
-# ---------------------------- #
+# ------------------------------------------------------------------------ #
 
 # Configure Xwrapper
 RUN sed -i 's/^allowed_users=.*/allowed_users=anybody/' /etc/X11/Xwrapper.config || echo "allowed_users=anybody" >> /etc/X11/Xwrapper.config
@@ -51,10 +49,11 @@ RUN sed -i 's/crypt_level=high/crypt_level=low/' /etc/xrdp/xrdp.ini && \
     sed -i 's/security_layer=negotiate/security_layer=rdp/' /etc/xrdp/xrdp.ini && \
     sed -i 's/max_bpp=32/max_bpp=24/' /etc/xrdp/xrdp.ini
 
-# Ensure XFCE starts safely for the new user (Fixes black screen)
+# Ensure XFCE starts safely for the user (Fixes black screen)
 RUN echo "unset DBUS_SESSION_BUS_ADDRESS" > /etc/skel/.xsession && \
     echo "unset XDG_RUNTIME_DIR" >> /etc/skel/.xsession && \
     echo "exec startxfce4" >> /etc/skel/.xsession && \
+    mkdir -p /home/ubuntu && \
     cp /etc/skel/.xsession /home/ubuntu/.xsession && \
     chown ubuntu:ubuntu /home/ubuntu/.xsession
 
