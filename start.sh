@@ -1,20 +1,11 @@
 #!/bin/bash
 
-# अगर आपने कंटेनर रन करते समय CODE एनवायरनमेंट वेरिएबल दिया है तो यह उसे चालू करेगा
-if [ -z "$CHROME_CODE" ]; then
-    echo "--------------------------------------------------------"
-    echo "ERROR: कृपया CHROME_CODE वेरिएबल के साथ रन करें।"
-    echo "कोड यहाँ से लें: https://remotedesktop.google.com/headless"
-    echo "--------------------------------------------------------"
-    exit 1
-fi
-
-# Chrome Remote Desktop सर्विस शुरू करना
-/opt/google/chrome-remote-desktop/start-host \
-    --code="$CHROME_CODE" \
+# आपके कोड के साथ Google Remote Desktop होस्ट को शुरू करना
+DISPLAY= /opt/google/chrome-remote-desktop/start-host \
+    --code="4/0AXEQxIDTgqQK7ct5ctOfi77pDUCTmTnvmDFru4l4NY-0t__CP40j0Ysr_cQ4BXV6kyn0EQ" \
     --redirect-url="https://remotedesktop.google.com/_/oauthredirect" \
     --name="Chromebook-Docker" \
-    --pin="123456" # आपका RDP पासवर्ड (6 अंकों का)
+    --pin="123456"
 
 # कंटेनर को चालू रखने के लिए
 tail -f /dev/null
