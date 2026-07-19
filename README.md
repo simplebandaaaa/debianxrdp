@@ -1,2 +1,2 @@
-docker build -t ubuntu-desktop-rdp .
-docker run -d -p 3389:3389 --name my-desktop ubuntu-desktop-rdp
+docker build -t chromebook-rdp .
+docker run -d -e CHROME_CODE="आपका_कॉपी_किया_गया_कोड" chromebook-rdp
