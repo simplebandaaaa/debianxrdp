@@ -1,23 +1,20 @@
 #!/bin/bash
 
-# XRDP के लिए ज़रूरी रनटाइम डायरेक्टरी बनाना
-mkdir -p /var/run/xrdp
-mkdir -p /var/run/dbus
+# अगर आपने कंटेनर रन करते समय CODE एनवायरनमेंट वेरिएबल दिया है तो यह उसे चालू करेगा
+if [ -z "$CHROME_CODE" ]; then
+    echo "--------------------------------------------------------"
+    echo "ERROR: कृपया CHROME_CODE वेरिएबल के साथ रन करें।"
+    echo "कोड यहाँ से लें: https://remotedesktop.google.com/headless"
+    echo "--------------------------------------------------------"
+    exit 1
+fi
 
-# किसी भी पुराने बचे हुए सॉकेट या PID फाइलों को डिलीट करना
-rm -f /var/run/xrdp/xrdp.pid
-rm -f /var/run/xrdp/xrdp-sesman.pid
-rm -f /var/run/xrdp/xrdp_sesman.socket
+# Chrome Remote Desktop सर्विस शुरू करना
+/opt/google/chrome-remote-desktop/start-host \
+    --code="$CHROME_CODE" \
+    --redirect-url="https://remotedesktop.google.com/_/oauthredirect" \
+    --name="Chromebook-Docker" \
+    --pin="123456" # आपका RDP पासवर्ड (6 अंकों का)
 
-# D-Bus और मशीन आईडी को सही से कॉन्फ़िगर और स्टार्ट करना
-dbus-uuidgen --ensure
-dbus-daemon --system --fork
-
-# XRDP सेशन मैनेजर (sesman) को बैकग्राउंड में स्टार्ट करना
-xrdp-sesman --nodaemon &
-
-# थोड़ा रुकना ताकि sesman पूरी तरह एक्टिव हो जाए
-sleep 2
-
-# मुख्य XRDP सर्वर को फोरग्राउंड में चलाना
-exec xrdp --nodaemon
+# कंटेनर को चालू रखने के लिए
+tail -f /dev/null
