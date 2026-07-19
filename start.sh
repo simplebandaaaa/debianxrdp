@@ -1,16 +1,17 @@
 #!/bin/bash
 
-# 1. अगर पिछली बार क्रैश होने से कोई पुरानी PID फाइल बची हो, तो उसे साफ करें
+# 1. पुरानी लॉक फाइल्स को पूरी तरह साफ करें
 rm -f /var/run/xrdp/xrdp.pid
 rm -f /var/run/xrdp/xrdp-sesman.pid
 rm -f /var/run/dbus/pid
+rm -rf /tmp/.X11-unix/X*
 
-# 2. DBus सर्विस को बैकग्राउंड में शुरू करें
+# 2. D-Bus सर्विस को शुरू करें
 service dbus start
 
-# 3. XRDP मेन सर्विस को बैकग्राउंड में शुरू करें
-xrdp
+# 3. xrdp-sesman को पहले बैकग्राउंड में चलाएं
+xrdp-sesman
 
-# 4. अब sesman को सीधे फ़ोरग्राउंड में चलाएं (बिना 'service xrdp start' के टकराव के)
-echo "RDP Server is running safely on port 3389..."
-exec xrdp-sesman --nodaemon
+# 4. xrdp को फ़ोरग्राउंड में चलाएं ताकि कंटेनर एक्टिव रहे और प्रॉक्सी ट्रैफिक ले सके
+echo "Starting XRDP server on port 3389..."
+exec xrdp --nodaemon
