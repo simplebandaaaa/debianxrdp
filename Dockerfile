@@ -2,7 +2,7 @@ FROM debian:12-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# आवश्यक टूल्स और XFCE डेस्कटॉप इंस्टॉल करना (Crostini एनवायरनमेंट के लिए)
+# आवश्यक टूल्स और XFCE डेस्कटॉप इंस्टॉल करना
 RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     curl \
@@ -19,20 +19,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# ---- 🌐 CHROME REMOTE DESKTOP इंस्टॉल करना ---- #
+# Chrome Remote Desktop इंस्टॉल करना
 RUN wget https://dl.google.com/linux/direct/chrome-remote-desktop_current_amd64.deb && \
     apt-get update && apt-get install -y --no-install-recommends ./chrome-remote-desktop_current_amd64.deb && \
     rm chrome-remote-desktop_current_amd64.deb && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# ---- 🌐 GOOGLE CHROME BROWSER इंस्टॉल करना ---- #
+# Google Chrome Browser इंस्टॉल करना
 RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
     apt-get update && apt-get install -y --no-install-recommends ./google-chrome-stable_current_amd64.deb && \
     rm google-chrome-stable_current_amd64.deb && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# ---- 🛠️ CHROMEBOOK USER SETUP ---- #
-# असली Chromebook का डिफॉल्ट यूजर 'chronos' होता है
+# Chromebook User (chronos) सेटअप
 RUN useradd -m -s /bin/bash -G sudo chronos && \
     echo "chronos:chronos" | chpasswd && \
     echo "chronos ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
@@ -43,7 +42,6 @@ RUN echo "exec /etc/X11/Xsession /usr/bin/xfce4-session" > /etc/chrome-remote-de
 USER chronos
 WORKDIR /home/chronos
 
-# Chrome Remote Desktop के लिए आवश्यक डायरेक्टरी
 RUN mkdir -p .config/chrome-remote-desktop
 
 COPY --chown=chronos:chronos start.sh /home/chronos/start.sh
