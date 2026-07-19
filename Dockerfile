@@ -1,4 +1,4 @@
-FROM ubuntu:26.04
+FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -10,13 +10,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends software-proper
     add-apt-repository -y ppa:mozillateam/ppa && \
     printf 'Package: firefox*\nPin: release o=LP-PPA-mozillateam\nPin-Priority: 1001\n' > /etc/apt/preferences.d/mozilla-firefox
 
-# Update and install packages (GNOME और XRDP के लिए)
+# Update and install packages (XFCE - जो हल्का है और Railway पर तुरंत चलेगा)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xrdp \
     xorgxrdp \
-    ubuntu-desktop-minimal \
-    gnome-session \
-    gnome-terminal \
+    xfce4 \
+    xfce4-goodies \
     xorg \
     dbus-x11 \
     dbus-user-session \
@@ -27,6 +26,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     net-tools \
     ssl-cert \
     polkitd \
+    pulseaudio \
+    pulseaudio-utils \
     wine \
     wine32:i386 \
     firefox && \
@@ -53,10 +54,8 @@ RUN sed -i 's/crypt_level=high/crypt_level=low/' /etc/xrdp/xrdp.ini && \
     sed -i 's/security_layer=negotiate/security_layer=rdp/' /etc/xrdp/xrdp.ini && \
     sed -i 's/max_bpp=32/max_bpp=24/' /etc/xrdp/xrdp.ini
 
-# ---- 🛠️ GNOME RDP FIX (ब्लैक स्क्रीन से बचने के लिए सबसे जरूरी हिस्सा) ---- #
-# GNOME को चलाने के लिए XDG environment variables सेट करना जरूरी है
-RUN printf 'export XDG_CURRENT_DESKTOP=GNOME\nexport XDG_SESSION_TYPE=x11\nexport XDG_SESSION_DESKTOP=ubuntu\nexec gnome-session\n' > /home/ubuntu/.xsession && \
-    printf 'export XDG_CURRENT_DESKTOP=GNOME\nexport XDG_SESSION_TYPE=x11\nexport XDG_SESSION_DESKTOP=ubuntu\n' > /home/ubuntu/.xsessionrc && \
+# Ensure XFCE starts safely for the user
+RUN printf 'unset DBUS_SESSION_BUS_ADDRESS\nunset XDG_RUNTIME_DIR\nexport XDG_SESSION_TYPE=x11\nstartxfce4\n' > /home/ubuntu/.xsession && \
     chown -R ubuntu:ubuntu /home/ubuntu
 
 # Add xrdp user to ssl-cert group
