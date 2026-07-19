@@ -1,17 +1,13 @@
 #!/bin/bash
+# पुरानी लॉक फाइल्स हटाना
+rm -rf /var/run/xrdp/* /var/run/dbus/* /tmp/.X11-unix/X*
 
-# 1. पुरानी लॉक फाइल्स को पूरी तरह साफ करें
-rm -f /var/run/xrdp/xrdp.pid
-rm -f /var/run/xrdp/xrdp-sesman.pid
-rm -f /var/run/dbus/pid
-rm -rf /tmp/.X11-unix/X*
+# DBus और दोनों सर्विसेस को सीधे बाइनरी से चलाना बिना किसी 'service start' के
+dbus-daemon --system --fork
 
-# 2. D-Bus सर्विस को शुरू करें
-service dbus start
-
-# 3. xrdp-sesman को पहले बैकग्राउंड में चलाएं
+# xrdp-sesman को बैकग्राउंड में चलाना
 xrdp-sesman
 
-# 4. xrdp को फ़ोरग्राउंड में चलाएं ताकि कंटेनर एक्टिव रहे और प्रॉक्सी ट्रैफिक ले सके
-echo "Starting XRDP server on port 3389..."
+# xrdp को फ़ोरग्राउंड में चलाना ताकि कंटेनर चालू रहे
+echo "RDP running..."
 exec xrdp --nodaemon
